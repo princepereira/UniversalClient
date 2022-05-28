@@ -73,9 +73,11 @@ func NewConfig(args map[string]string) (config *Config) {
 }
 
 func PrintBanner() {
-	fmt.Println("\n#==========================================#")
-	fmt.Println("#         Name   : Universal Client        #")
-	fmt.Println("#         Author : Prince Pereira          #")
-	fmt.Println("#         Verion : v28.05.2022             #")
-	fmt.Println("#==========================================#\n")
+	fmt.Println(" ")
+	fmt.Println("#===========================================#")
+	fmt.Println("#         Name    : Universal Client        #")
+	fmt.Println("#         Version : v28.05.2022             #")
+	fmt.Println("#         Author  : Prince Pereira          #")
+	fmt.Println("#===========================================#")
+	fmt.Println(" ")
 }
