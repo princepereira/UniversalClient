@@ -4,7 +4,6 @@ This repository contains the source code for universal client
 Universal client act as a client for all message buses (Eg: Nats,Kafka) and NosQL DBS (Eg: Etcd, Redis.). 
 You will find the binary in bin directory.
 After generating the client, it will be copied to repo : https://github.com/princepereira/UniversalClientLib
-
 ```
 
 __How to generate binary__:
