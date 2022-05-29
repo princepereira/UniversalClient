@@ -21,8 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
-package nats
+package kafka
 
 import (
 	c "UniversalClient/config"
@@ -30,7 +29,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/nats-io/nats.go"
+	"github.com/confluentinc/confluent-kafka-go-dev/kafka"
 )
 
 const (
@@ -50,17 +49,33 @@ func Init(conf *c.Config) {
 
 func produce(conf *c.Config) {
 	addr := fmt.Sprintf(addrPattern, conf.IpAddr, conf.Port)
-	nc, err := nats.Connect(addr)
+	producer, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": addr,
+		"client.id":         "localhost",
+		"acks":              "all"})
 	if err != nil {
-		fmt.Printf("Connecting to Nats topic : %s failed. Error : %v", conf.Topic, err)
+		fmt.Println("Kafka connection failed. Error : ", err)
 		return
 	}
 
-	defer nc.Close()
-	// Simple Publisher
-	err = nc.Publish(conf.Topic, []byte(conf.Message))
+	del_chan := make(chan kafka.Event, 10000)
+	defer close(del_chan)
+
+	err = producer.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &conf.Topic, Partition: kafka.PartitionAny},
+		Value:          []byte(conf.Message)},
+		del_chan,
+	)
 	if err != nil {
-		fmt.Printf("Producing to Nats topic : %s failed. Error : %v", conf.Topic, err)
+		fmt.Println("Kafka produce failed. Error : ", err)
+		return
+	}
+
+	channel_out := <-del_chan
+	message_report := channel_out.(*kafka.Message)
+
+	if message_report.TopicPartition.Error != nil {
+		fmt.Println(message_report.TopicPartition.Error)
 		return
 	}
 
@@ -70,52 +85,57 @@ func produce(conf *c.Config) {
 func consume(conf *c.Config) {
 	topics := strings.Split(conf.Topic, ",")
 	addr := fmt.Sprintf(addrPattern, conf.IpAddr, conf.Port)
-	nc, err := nats.Connect(addr)
-	if err != nil {
-		fmt.Printf("Connecting to Nats topic : %s failed. Error : %v", conf.Topic, err)
-		return
-	}
 	fmt.Println("Subscribed topics : ", topics, "\n")
 
 	defer func() {
 		fmt.Println("Subscription completed.")
-		nc.Close()
 	}()
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(topics))
 	for _, topic := range topics {
-		go subscribe(nc, topic, wg)
+		go subscribe(addr, topic, wg)
 	}
 	wg.Wait()
 }
 
-func subscribe(nc *nats.Conn, topic string, wg *sync.WaitGroup) {
+func subscribe(addr string, topic string, wg *sync.WaitGroup) {
+
 	// Channel Subscriber
-	ch := make(chan *nats.Msg, 64)
-	sub, err := nc.ChanSubscribe(topic, ch)
-	defer func() {
-		// Unsubscribe
-		sub.Unsubscribe()
-		close(ch)
-		wg.Done()
-	}()
+	c, err := kafka.NewConsumer(&kafka.ConfigMap{
+		"bootstrap.servers": addr,
+		"group.id":          "myGroup",
+		"auto.offset.reset": "earliest",
+	})
 
 	if err != nil {
-		fmt.Printf("Subscribing to Nats topic : %s failed. Error : %v", topic, err)
-		return
+		panic(err)
 	}
 
-	for msg := range ch {
-		printMsg(msg)
+	defer func() {
+		wg.Done()
+		c.Close()
+	}()
+
+	c.SubscribeTopics([]string{topic}, nil)
+
+	for {
+		msg, err := c.ReadMessage(-1)
+		if err == nil {
+			printMsg(topic, msg)
+		} else {
+			// The client will automatically try to recover from all errors.
+			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
+		}
 	}
 
 }
 
-func printMsg(m *nats.Msg) {
+func printMsg(topic string, m *kafka.Message) {
 	fmt.Println("#========================#")
-	fmt.Println("Topic  : ", m.Subject)
-	fmt.Println("Header : ", m.Header)
-	fmt.Println("Body   : ", string(m.Data))
+	fmt.Println("Topic     : ", topic)
+	fmt.Println("Partition : ", m.TopicPartition)
+	fmt.Println("Header    : ", m.Headers)
+	fmt.Println("Body      : ", string(m.Value))
 	fmt.Println("#========================#\n")
 }

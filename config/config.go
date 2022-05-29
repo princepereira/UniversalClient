@@ -55,6 +55,10 @@ const (
 	ClientEtcd  TypeClient = "etcd"
 )
 
+const (
+	MessageDelivered = "\nMessage Delivered\n"
+)
+
 type Config struct {
 	IpAddr  string     `json:"-i"`
 	Port    string     `json:"-p"`

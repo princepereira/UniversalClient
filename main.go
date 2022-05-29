@@ -26,6 +26,7 @@ package main
 
 import (
 	c "UniversalClient/config"
+	"UniversalClient/kafka"
 	"UniversalClient/nats"
 	"fmt"
 	"net"
@@ -197,7 +198,7 @@ func main() {
 	case c.ClientNats:
 		nats.Init(conf)
 	case c.ClientKafka:
-		fmt.Println("Kafka not yet supported")
+		kafka.Init(conf)
 	case c.ClientEtcd:
 		fmt.Println("Etcd not yet supported")
 	default:

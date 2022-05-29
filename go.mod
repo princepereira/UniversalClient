@@ -2,7 +2,10 @@ module UniversalClient
 
 go 1.18
 
-require github.com/nats-io/nats.go v1.16.0
+require (
+	github.com/confluentinc/confluent-kafka-go-dev v0.0.0-20210424072345-f818fd31a4ce
+	github.com/nats-io/nats.go v1.16.0
+)
 
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
