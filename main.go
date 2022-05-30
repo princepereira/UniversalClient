@@ -28,6 +28,7 @@ import (
 	c "UniversalClient/config"
 	"UniversalClient/kafka"
 	"UniversalClient/nats"
+	"UniversalClient/redis"
 	"fmt"
 	"net"
 	"os"
@@ -35,8 +36,16 @@ import (
 	"time"
 )
 
+func help() string {
+	str := "Nats/Kafka Producer : ./client -c <Nats/Kafka> -a produce -i 127.0.0.1 -p <4222/9092> -t topic1 -m 'Hello World'\n"
+	str = str + "Nats/Kafka Consumer : ./client -c <Nats/Kafka> -a consume -i 127.0.0.1 -p <4222/9092> -t 'topic1,topic2'\n"
+	str = str + "Etcd/Redis PUT      : ./client -c <Etcd/Redis> -a put -i 127.0.0.1 -p <2379/6379> -t key1 -m 'Hello World'\n"
+	str = str + "Etcd/Redis GET/DEL  : ./client -c <Etcd/Redis> -a <get/del> -i 127.0.0.1 -p <2379/6379> -t key1"
+	return str
+}
+
 var argKeys = map[string]string{
-	c.AtribHelp:    "Eg: ./client -c Nats -a produce -i 127.0.0.1 -p 4222 -t test -m 'Hello World'",
+	c.AtribHelp:    help(),
 	c.AtribIpAddr:  "Server IP. Eg: -i 127.0.0.1",
 	c.AtribPort:    "Server Port Number. Eg: -p 4222",
 	c.AtribAction:  "Action. Eg. -a produce/consume",
@@ -70,14 +79,14 @@ func validateVals(atrib, val string, args map[string]string) error {
 		}
 	case c.AtribAction:
 		switch strings.ToLower(val) {
-		case "produce", "consume":
+		case "produce", "consume", "put", "get", "del":
 			return nil
 		default:
-			return fmt.Errorf("unsupported values for action: %s. Supported values are : produce/consume", val)
+			return fmt.Errorf("unsupported values for action: %s. Supported values are : produce/consume/put/get/del", val)
 		}
 	case c.AtribClient:
 		switch strings.ToLower(val) {
-		case "nats", "kafka", "etcd":
+		case "nats", "kafka", "etcd", "redis":
 			return nil
 		default:
 			return fmt.Errorf("unsupported values for '-c' : %s. Supported values are : nats/kafka/etcd", val)
@@ -109,7 +118,6 @@ func validateArgs() (map[string]string, error) {
 
 			if os.Args[i] == c.AtribHide {
 				args[os.Args[i]] = "true"
-				i++
 				return args, nil
 			}
 
@@ -134,9 +142,22 @@ func validateArgs() (map[string]string, error) {
 
 func dealHelp(args map[string]string) bool {
 	if _, ok := args[c.AtribHelp]; ok {
-		if len(args) > 1 {
+		if client, ok1 := args[c.AtribClient]; ok1 {
+
+			switch strings.ToLower(client) {
+			case string(c.ClientKafka), string(c.ClientNats):
+				fmt.Println("Eg. Producer: ./client -c Nats/Kafka -a produce -i 127.0.0.1 -p 4222/9092 -t topic1 -m 'Hello World'")
+				fmt.Println("Eg. Consumer: ./client -c Nats/Kafka -a consume -i 127.0.0.1 -p 4222/9092 -t topic1,topic2")
+			case string(c.ClientEtcd), string(c.ClientRedis):
+				fmt.Println("Eg. PUT: ./client -c Etcd/Redis -a put -i 127.0.0.1 -p 2379/6379 -t <key1> -m 'Hello World'")
+				fmt.Println("Eg. GET: ./client -c Etcd/Redis -a get -i 127.0.0.1 -p 2379/6379 -t <key1>")
+				fmt.Println("Eg. GET: ./client -c Etcd/Redis -a del -i 127.0.0.1 -p 2379/6379 -t <key1>")
+			}
+
+		} else if len(args) > 1 {
 			fmt.Println("unsupported command format. Follow ", argKeys[c.AtribHelp])
 		} else {
+			c.PrintBanner2()
 			fmt.Println(argKeys[c.AtribHelp])
 		}
 		return true
@@ -188,11 +209,7 @@ func main() {
 
 	conf := c.NewConfig(args)
 
-	if conf.Hide != "" {
-
-	} else if conf.Action == c.ActionConsume {
-		c.PrintBanner()
-	}
+	c.PrintBanner(conf)
 
 	switch c.TypeClient(strings.ToLower(string(conf.Client))) {
 	case c.ClientNats:
@@ -201,6 +218,8 @@ func main() {
 		kafka.Init(conf)
 	case c.ClientEtcd:
 		fmt.Println("Etcd not yet supported")
+	case c.ClientRedis:
+		redis.Init(conf)
 	default:
 		fmt.Println("Unknown client : ", conf.Client)
 	}

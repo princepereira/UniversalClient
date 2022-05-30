@@ -27,6 +27,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -45,6 +46,9 @@ type TypeAction string
 const (
 	ActionProduce TypeAction = "produce"
 	ActionConsume TypeAction = "consume"
+	ActionPut     TypeAction = "put"
+	ActionGet     TypeAction = "get"
+	ActionDel     TypeAction = "del"
 )
 
 type TypeClient string
@@ -53,10 +57,12 @@ const (
 	ClientNats  TypeClient = "nats"
 	ClientKafka TypeClient = "kafka"
 	ClientEtcd  TypeClient = "etcd"
+	ClientRedis TypeClient = "redis"
 )
 
 const (
-	MessageDelivered = "\nMessage Delivered\n"
+	MessageDelivered = "\nMessage Delivered\n\n"
+	DataStored       = "\nData Stored\n"
 )
 
 type Config struct {
@@ -76,10 +82,21 @@ func NewConfig(args map[string]string) (config *Config) {
 	return
 }
 
-func PrintBanner() {
+func PrintBanner(conf *Config) {
+	if conf.Hide != "" {
+
+	} else {
+		switch TypeAction(strings.ToLower(string(conf.Action))) {
+		case ActionConsume:
+			PrintBanner2()
+		}
+	}
+}
+
+func PrintBanner2() {
 	fmt.Println(" ")
 	fmt.Println("#===========================================#")
-	fmt.Println("#         Name    : Universal Client        #")
+	fmt.Println("#         Title   : Universal Client        #")
 	fmt.Println("#         Version : v28.05.2022             #")
 	fmt.Println("#         Author  : Prince Pereira          #")
 	fmt.Println("#===========================================#")

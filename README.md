@@ -32,7 +32,14 @@ Eg: ./client -c Nats -a produce -i 127.0.0.1 -p 4222 -t test -m 'Hello World' -H
 ```
 __Bringup Nats for testing the client__:
 ```
-Eg: sudo docker run -d --name nats-server --entrypoint /nats-streaming-server -p 4222:4222 -p 8222:8222 nats-streaming
+Start Nats Server Docker
+$ sudo docker run -d --name nats-server --entrypoint /nats-streaming-server -p 4222:4222 -p 8222:8222 nats-streaming
+
+Publish data to Nats Server Subject
+$ ./client -c Nats -a Produce -i 127.0.0.1 -p 4222 -t subject1 -m 'Hello World'
+
+Retrieve data from Nats Server Subject
+$ ./client -c Nats -a Consume -i 127.0.0.1 -p 4222 -t subject1 
 ```
 
 
@@ -69,5 +76,29 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 ```
 ```
+Start Kafka and Zookeeper Server Dockers
 $ docker-compose up -d
+
+Publish data to Kafka Server Topic
+$ ./client -c Kafka -a Produce -i 127.0.0.1 -p 9092 -t topic1 -m 'Hello World'
+
+Retrieve data from Kafka Server Topic
+$ ./client -c Kafka -a Consume -i 127.0.0.1 -p 9092 -t topic1 
+```
+
+__Bringup Redis for testing the client__:
+
+```
+Start Redis Docker
+$ docker run --name redis-server -p 6379:6379 -d redis
+
+PUT data to Redis Server
+$ ./client -c Redis -a Put -i 127.0.0.1 -p 6379 -t test -m 'Hello World'
+
+GET data from Redis Server
+$ ./client -c Redis -a Get -i 127.0.0.1 -p 6379 -t test
+
+DEL data from Redis Server
+$ ./client -c Redis -a Del -i 127.0.0.1 -p 6379 -t test
+
 ```

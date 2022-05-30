@@ -44,7 +44,7 @@ func Init(conf *c.Config) {
 	case c.ActionConsume:
 		consume(conf)
 	default:
-		fmt.Println("Unknown action : ", conf.Action)
+		fmt.Println("Unsupported action : ", conf.Action, " for Nats. Supported actions are : 'Produce/Consume'")
 	}
 }
 
@@ -64,7 +64,7 @@ func produce(conf *c.Config) {
 		return
 	}
 
-	fmt.Println(c.MessageDelivered)
+	fmt.Printf(c.MessageDelivered)
 }
 
 func consume(conf *c.Config) {
