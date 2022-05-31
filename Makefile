@@ -17,6 +17,7 @@ push:
 	@$(GIT) add -u
 	@$(GIT) commit -m "Adding more changes"
 	@$(GIT) push -f
+	@$(GIT) status
 	@echo "==> Pushing changes completed <=="	
 
 .PHONY: push-all
