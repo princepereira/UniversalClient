@@ -26,10 +26,6 @@ Kafka Producer Eg: ./client -c Kafka -a produce -i 127.0.0.1 -p 9092 -t test -m 
 Kafka Consumer Eg: ./client -c Kafka -a consume -i 127.0.0.1 -p 9092 -t "test1,test2"
 
 ```
-__How to use without banner__:
-```
-Eg: ./client -c Nats -a produce -i 127.0.0.1 -p 4222 -t test -m 'Hello World' -H
-```
 __Bringup Nats for testing the client__:
 ```
 Start Nats Server Docker
